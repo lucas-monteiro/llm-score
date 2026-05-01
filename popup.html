@@ -7,18 +7,193 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="container">
-      <h1>LLM Score</h1>
-      <div id="score" class="score-value">--</div>
+    <main class="report-card">
+      <header class="report-header">
+        <div class="title-block">
+          <h1 id="report-title">LLM Score</h1>
+          <p id="report-subtitle">See how your site performs for leading AIs</p>
+          <p id="page-url" class="page-meta-url" aria-live="polite">Waiting for active tab...</p>
+        </div>
+        <div class="header-actions">
+          <button id="reload-score" type="button" class="reload-button">Reload</button>
+          <div class="language-toggle" aria-label="Language">
+          <button type="button" data-locale="en-US" aria-label="English, United States" title="English, United States" aria-pressed="true">
+            <svg class="flag-svg" viewBox="0 0 7410 3900" aria-hidden="true" focusable="false">
+              <rect width="7410" height="3900" fill="#b22234" />
+              <path d="M0 300h7410M0 900h7410M0 1500h7410M0 2100h7410M0 2700h7410M0 3300h7410" stroke="#fff" stroke-width="300" />
+              <rect width="2964" height="2100" fill="#3c3b6e" />
+              <g fill="#fff">
+                <circle cx="247" cy="175" r="55" /><circle cx="741" cy="175" r="55" /><circle cx="1235" cy="175" r="55" /><circle cx="1729" cy="175" r="55" /><circle cx="2223" cy="175" r="55" /><circle cx="2717" cy="175" r="55" />
+                <circle cx="494" cy="350" r="55" /><circle cx="988" cy="350" r="55" /><circle cx="1482" cy="350" r="55" /><circle cx="1976" cy="350" r="55" /><circle cx="2470" cy="350" r="55" />
+                <circle cx="247" cy="525" r="55" /><circle cx="741" cy="525" r="55" /><circle cx="1235" cy="525" r="55" /><circle cx="1729" cy="525" r="55" /><circle cx="2223" cy="525" r="55" /><circle cx="2717" cy="525" r="55" />
+                <circle cx="494" cy="700" r="55" /><circle cx="988" cy="700" r="55" /><circle cx="1482" cy="700" r="55" /><circle cx="1976" cy="700" r="55" /><circle cx="2470" cy="700" r="55" />
+                <circle cx="247" cy="875" r="55" /><circle cx="741" cy="875" r="55" /><circle cx="1235" cy="875" r="55" /><circle cx="1729" cy="875" r="55" /><circle cx="2223" cy="875" r="55" /><circle cx="2717" cy="875" r="55" />
+                <circle cx="494" cy="1050" r="55" /><circle cx="988" cy="1050" r="55" /><circle cx="1482" cy="1050" r="55" /><circle cx="1976" cy="1050" r="55" /><circle cx="2470" cy="1050" r="55" />
+                <circle cx="247" cy="1225" r="55" /><circle cx="741" cy="1225" r="55" /><circle cx="1235" cy="1225" r="55" /><circle cx="1729" cy="1225" r="55" /><circle cx="2223" cy="1225" r="55" /><circle cx="2717" cy="1225" r="55" />
+                <circle cx="494" cy="1400" r="55" /><circle cx="988" cy="1400" r="55" /><circle cx="1482" cy="1400" r="55" /><circle cx="1976" cy="1400" r="55" /><circle cx="2470" cy="1400" r="55" />
+                <circle cx="247" cy="1575" r="55" /><circle cx="741" cy="1575" r="55" /><circle cx="1235" cy="1575" r="55" /><circle cx="1729" cy="1575" r="55" /><circle cx="2223" cy="1575" r="55" /><circle cx="2717" cy="1575" r="55" />
+              </g>
+            </svg>
+          </button>
+          <button type="button" data-locale="pt-BR" aria-label="Português, Brasil" title="Português, Brasil" aria-pressed="false">
+            <svg class="flag-svg" viewBox="0 0 720 504" aria-hidden="true" focusable="false">
+              <rect width="720" height="504" fill="#009b3a" />
+              <path d="M360 62 646 252 360 442 74 252Z" fill="#ffdf00" />
+              <circle cx="360" cy="252" r="104" fill="#002776" />
+              <path d="M260 232c74-22 166-8 224 42" fill="none" stroke="#fff" stroke-width="18" />
+            </svg>
+          </button>
+          </div>
+          <button id="about-button" type="button" class="info-button" aria-label="About LLM Score" title="About LLM Score">
+            <span aria-hidden="true">i</span>
+          </button>
+        </div>
+      </header>
 
-      <section>
-        <h2>Suggestions</h2>
-        <ul id="suggestions">
+      <div id="about-modal-backdrop" class="modal-backdrop" hidden>
+        <section class="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
+          <div class="about-header">
+            <h2 id="about-title">About LLM Score</h2>
+            <button id="close-about" type="button" class="modal-close" aria-label="Close">×</button>
+          </div>
+          <p id="about-description" class="about-description">
+            This extension evaluates page structure and content quality so anyone can see how well a page is prepared for AI search.
+          </p>
+          <p class="about-note">The score is based on headings, paragraphs, lists, emphasis, links and metadata.</p>
+        </section>
+      </div>
+
+      <section class="metrics-grid" aria-label="Analysis summary">
+        <div class="metric">
+          <p class="metric-label">
+            <span class="metric-dot metric-dot-green"></span>
+            <span id="score-metric-label">Score</span>
+          </p>
+          <div class="metric-value">
+            <span id="score">--</span><span class="metric-unit">/100</span>
+          </div>
+          <p id="score-label" class="metric-note">Analyzing page</p>
+        </div>
+
+        <div class="metric">
+          <p class="metric-label">
+            <span class="metric-dot metric-dot-gold"></span>
+            <span id="issues-metric-label">Issues</span>
+          </p>
+          <div class="metric-value">
+            <span id="issues-count">--</span><span class="metric-unit" id="issues-unit">found</span>
+          </div>
+          <p id="summary-note" class="metric-note">Waiting for results</p>
+        </div>
+      </section>
+
+      <div class="meter" aria-hidden="true">
+        <span id="score-meter"></span>
+      </div>
+
+      <section class="suggestions-panel">
+        <h2 id="suggestions-title">Suggestions</h2>
+        <ul id="suggestions" class="suggestions-list">
           <li>Analyzing current page...</li>
         </ul>
+        <button id="show-more-suggestions" type="button" class="show-more-button" hidden>
+          <span id="show-more-text">Show more</span>
+        </button>
+      </section>
+
+      <section class="llm-fit-panel">
+        <div class="tab-list" role="tablist" aria-label="LLM insights">
+          <button type="button" id="llm-tab" class="tab-button" role="tab" aria-selected="true" aria-controls="llm-panel" data-tab="llm-panel">
+            <span id="llm-fit-title">Top 4 AI search fit</span>
+          </button>
+          <button type="button" id="insights-tab" class="tab-button" role="tab" aria-selected="false" aria-controls="insights-panel" data-tab="insights-panel" hidden>
+            <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 2.5c1.1 4 3.1 6 7 7-3.9 1-5.9 3-7 7-1.1-4-3.1-6-7-7 3.9-1 5.9-3 7-7Z" />
+              <path d="M18 15c.4 1.5 1.2 2.3 2.7 2.7-1.5.4-2.3 1.2-2.7 2.7-.4-1.5-1.2-2.3-2.7-2.7 1.5-.4 2.3-1.2 2.7-2.7Z" />
+            </svg>
+            <span id="prompt-title">Improvement insights</span>
+          </button>
+          <button type="button" id="spy-tab" class="tab-button" role="tab" aria-selected="false" aria-controls="spy-panel" data-tab="spy-panel" hidden>
+            <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span id="spy-title">Spy</span>
+          </button>
+        </div>
+
+        <div id="llm-panel" class="tab-panel" role="tabpanel" aria-labelledby="llm-tab">
+          <p id="llm-fit-help" class="section-help">Independent model-specific estimates for leading AIs</p>
+          <div class="llm-fit-grid">
+            <article class="llm-card" data-llm="chatgpt">
+              <div class="llm-ring">
+                <svg class="llm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3.5c2.2 0 3.3 1.2 3.7 2.6 1.6.2 3 1.4 3.5 3 .7 2-.1 3.6-1.4 4.6.3 1.5-.3 3.2-1.6 4.2-1.7 1.3-3.4 1-4.5.2-1.3.9-3.1 1-4.5 0-1.7-1.2-2.1-2.9-1.8-4.3-1.2-1-1.8-2.7-1.2-4.4.7-2 2.2-2.9 3.7-3.1.5-1.6 1.9-2.8 4.1-2.8Z" />
+                </svg>
+              </div>
+              <div>
+                <strong>ChatGPT</strong>
+                <span id="chatgpt-fit">--</span>
+              </div>
+            </article>
+
+            <article class="llm-card" data-llm="copilot">
+              <div class="llm-ring">
+                <svg class="llm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 10.5c0-3.2 2.6-5.8 6-5.8h2c3.4 0 6 2.6 6 5.8v4.2c0 2.5-1.8 4.6-4.2 4.6h-.6v-4.7H9.8v4.7h-.6C6.8 19.3 5 17.2 5 14.7v-4.2Z" />
+                  <path d="M9.8 14.6c.5.8 1.2 1.2 2.2 1.2s1.7-.4 2.2-1.2" />
+                </svg>
+              </div>
+              <div>
+                <strong>Copilot</strong>
+                <span id="copilot-fit">--</span>
+              </div>
+            </article>
+
+            <article class="llm-card" data-llm="claude">
+              <div class="llm-ring">
+                <svg class="llm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3 20 19H4L12 3Z" />
+                  <path d="M12 8.2 16.2 17H7.8L12 8.2Z" />
+                </svg>
+              </div>
+              <div>
+                <strong>Claude</strong>
+                <span id="claude-fit">--</span>
+              </div>
+            </article>
+
+            <article class="llm-card" data-llm="gemini">
+              <div class="llm-ring">
+                <svg class="llm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3c1.1 4 3.1 6.1 7 7-3.9.9-5.9 3-7 7-1.1-4-3.1-6.1-7-7 3.9-.9 5.9-3 7-7Z" />
+                  <path d="M18 15c.4 1.4 1.2 2.2 2.6 2.6-1.4.4-2.2 1.2-2.6 2.6-.4-1.4-1.2-2.2-2.6-2.6 1.4-.4 2.2-1.2 2.6-2.6Z" />
+                </svg>
+              </div>
+              <div>
+                <strong>Gemini</strong>
+                <span id="gemini-fit">--</span>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div id="insights-panel" class="tab-panel" role="tabpanel" aria-labelledby="insights-tab" hidden>
+          <div class="prompt-header">
+            <p id="prompt-help" class="section-help">Use this prompt with your client or content team.</p>
+            <button type="button" id="copy-prompt" class="copy-button">Copy</button>
+          </div>
+          <pre id="improvement-prompt"></pre>
+        </div>
+
+        <div id="spy-panel" class="tab-panel" role="tabpanel" aria-labelledby="spy-tab" hidden>
+          <p id="spy-help" class="section-help">What this page already does well for your client to reuse.</p>
+          <ul id="spy-insights" class="spy-list"></ul>
+        </div>
       </section>
     </main>
 
+    <div class="version-badge">v1.0.0</div>
     <script type="module" src="dist/popup.js"></script>
   </body>
 </html>
