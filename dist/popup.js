@@ -15,19 +15,31 @@ const UI_COPY = {
         reportSubtitle: "See how your site performs for leading AIs",
         analyzing: "Analyzing page",
         suggestionsTitle: "Suggestions",
-        promptTitle: "Improvement insights",
+        promptTitle: "Insights",
         promptHelp: "Use this prompt with your client or content team.",
         copyPrompt: "Copy",
         copiedPrompt: "Copied",
-        spyTitle: "Spy",
-        spyHelp: "What this page already does well for your client to reuse.",
-        llmFitTitle: "Top 4 AI search fit",
+        spyTitle: "Strengths",
+        spyHelp: "What this page already does well. Use as a benchmark.",
+        llmFitTitle: "AI Fit",
         llmFitHelp: "Independent model-specific estimates for leading AIs",
+        aboutTitle: "About LLM Score",
+        aboutDescription: "LLM Score evaluates page structure and content quality so anyone can see how well a page is prepared for AI search.",
+        aboutNote: "The score is based on headings, paragraphs, lists, emphasis, links and metadata.",
+        closeButton: "Close",
         scoreMetricLabel: "Score",
         issuesMetricLabel: "Issues",
         issuesUnit: "found",
         waitingForResults: "Waiting for results",
         greatJob: "Great job! No major suggestions found.",
+        reviewPrompt: "Enjoying LLM Score? Leave us a review!",
+        reviewButton: "Rate on Chrome Store",
+        checklistTitle: "Checklist",
+        checklistHelp: "All signals evaluated — pass or fail.",
+        exportButton: "Export MD",
+        exportCopied: "Copied!",
+        snippetHelp: "How AI search would likely present this page.",
+        noSnippet: "No description available.",
         scoreLabels: {
             low: "Needs attention",
             medium: "Getting there",
@@ -44,19 +56,31 @@ const UI_COPY = {
         reportSubtitle: "Saiba a performance do seu site para as principais IAs",
         analyzing: "Analisando página",
         suggestionsTitle: "Sugestões",
-        promptTitle: "Insights de melhoria",
+        promptTitle: "Insights",
         promptHelp: "Use este prompt com seu cliente ou time de conteúdo.",
         copyPrompt: "Copiar",
         copiedPrompt: "Copiado",
-        spyTitle: "Espionar",
-        spyHelp: "O que esta página já faz bem para seu cliente usar como referência.",
-        llmFitTitle: "Busca nas 4 principais IAs",
+        spyTitle: "Fortes",
+        spyHelp: "O que esta página já faz bem. Use como referência.",
+        llmFitTitle: "AI Fit",
         llmFitHelp: "Estimativas independentes e específicas por modelo",
+        aboutTitle: "Sobre LLM Score",
+        aboutDescription: "LLM Score avalia a estrutura e a qualidade do conteúdo da página para mostrar como ela está pronta para buscas com IA.",
+        aboutNote: "A pontuação considera títulos, parágrafos, listas, ênfase, links e metadados.",
+        closeButton: "Fechar",
         scoreMetricLabel: "Pontuação",
         issuesMetricLabel: "Problemas",
         issuesUnit: "encontrados",
         waitingForResults: "Aguardando resultado",
         greatJob: "Muito bom! Nenhuma sugestão importante encontrada.",
+        reviewPrompt: "Gostando do LLM Score? Deixe uma avaliação!",
+        reviewButton: "Avaliar na Chrome Store",
+        checklistTitle: "Checklist",
+        checklistHelp: "Todos os sinais avaliados — aprovado ou reprovado.",
+        exportButton: "Exportar MD",
+        exportCopied: "Copiado!",
+        snippetHelp: "Como a busca com IA provavelmente apresentaria esta página.",
+        noSnippet: "Sem descrição disponível.",
         scoreLabels: {
             low: "Precisa de atenção",
             medium: "No caminho certo",
@@ -80,6 +104,10 @@ const LLM_FIT_WEIGHTS = {
         lists: 5,
         h1Reinforced: 6,
         keywordFocus: 7,
+        llmsTxt: 7,
+        schemaMarkup: 7,
+        faqSchema: 8,
+        semanticStructure: 5,
     },
     copilot: {
         singleH1: 5,
@@ -91,6 +119,11 @@ const LLM_FIT_WEIGHTS = {
         emphasis: 6,
         numericalEvidence: 8,
         keywordFocus: 6,
+        llmsTxt: 6,
+        schemaMarkup: 9,
+        faqSchema: 7,
+        authorSignal: 6,
+        contentFreshness: 6,
     },
     claude: {
         paragraphLength: 8,
@@ -101,6 +134,11 @@ const LLM_FIT_WEIGHTS = {
         headingHierarchy: 6,
         h1Reinforced: 5,
         keywordFocus: 5,
+        llmsTxt: 6,
+        authorSignal: 7,
+        contentFreshness: 6,
+        semanticStructure: 5,
+        imageAltText: 5,
     },
     gemini: {
         singleH1: 6,
@@ -111,9 +149,96 @@ const LLM_FIT_WEIGHTS = {
         numericalEvidence: 9,
         lists: 5,
         keywordFocus: 7,
+        llmsTxt: 8,
+        schemaMarkup: 9,
+        faqSchema: 8,
+        contentFreshness: 7,
+        authorSignal: 6,
+        imageAltText: 5,
+    },
+    perplexity: {
+        singleH1: 6,
+        enoughH2: 7,
+        clearOpening: 9,
+        questionPhrasing: 9,
+        externalLinks: 7,
+        numericalEvidence: 8,
+        lists: 6,
+        metaDescription: 8,
+        llmsTxt: 9,
+        schemaMarkup: 5,
+        faqSchema: 9,
+        contentFreshness: 8,
+        authorSignal: 7,
+    },
+};
+const ALL_FINDING_KEYS = [
+    "singleH1", "enoughH2", "hasH3", "headingHierarchy",
+    "paragraphLength", "clearOpening", "definitions", "questionPhrasing",
+    "lists", "emphasis", "externalLinks", "numericalEvidence",
+    "metaDescription", "titleMatch", "h1Reinforced", "keywordFocus",
+    "llmsTxt", "noindex", "schemaMarkup", "faqSchema",
+    "contentFreshness", "authorSignal", "semanticStructure", "imageAltText",
+];
+const SIGNAL_LABELS = {
+    "en-US": {
+        singleH1: "Single H1",
+        enoughH2: "2+ H2s",
+        hasH3: "Has H3",
+        headingHierarchy: "Heading order",
+        paragraphLength: "Paragraph size",
+        clearOpening: "Clear opening",
+        definitions: "Definitions",
+        questionPhrasing: "Questions",
+        lists: "Lists",
+        emphasis: "Bold emphasis",
+        externalLinks: "External links",
+        numericalEvidence: "Numbers/stats",
+        metaDescription: "Meta description",
+        titleMatch: "Title match",
+        h1Reinforced: "H1 reinforced",
+        keywordFocus: "Keyword focus",
+        llmsTxt: "llms.txt",
+        noindex: "Crawlable",
+        schemaMarkup: "Schema markup",
+        faqSchema: "FAQ/HowTo schema",
+        contentFreshness: "Date signals",
+        authorSignal: "Author info",
+        semanticStructure: "Semantic HTML",
+        imageAltText: "Image alt text",
+    },
+    "pt-BR": {
+        singleH1: "H1 único",
+        enoughH2: "2+ H2s",
+        hasH3: "Tem H3",
+        headingHierarchy: "Ordem de títulos",
+        paragraphLength: "Tamanho dos parágrafos",
+        clearOpening: "Abertura clara",
+        definitions: "Definições",
+        questionPhrasing: "Perguntas",
+        lists: "Listas",
+        emphasis: "Negrito",
+        externalLinks: "Links externos",
+        numericalEvidence: "Números/estatísticas",
+        metaDescription: "Meta description",
+        titleMatch: "Título alinhado",
+        h1Reinforced: "H1 reforçado",
+        keywordFocus: "Palavras-chave",
+        llmsTxt: "llms.txt",
+        noindex: "Rastreável",
+        schemaMarkup: "Schema markup",
+        faqSchema: "Schema FAQ/HowTo",
+        contentFreshness: "Sinais de data",
+        authorSignal: "Autoria",
+        semanticStructure: "HTML semântico",
+        imageAltText: "Alt text de imagens",
     },
 };
 let currentLocale = getStoredLocale();
+let lastResult = null;
+let lastFitScores = null;
+let lastTabUrl = "";
+let lastHostname = "";
 function getActiveTab() {
     return __awaiter(this, void 0, void 0, function* () {
         const [tab] = yield chrome.tabs.query({ active: true, currentWindow: true });
@@ -172,6 +297,7 @@ function calculateLLMFitScores(result) {
         copilot: calculateLLMFitScore(baseScore, issueKeys, LLM_FIT_WEIGHTS.copilot),
         claude: calculateLLMFitScore(baseScore, issueKeys, LLM_FIT_WEIGHTS.claude),
         gemini: calculateLLMFitScore(baseScore, issueKeys, LLM_FIT_WEIGHTS.gemini),
+        perplexity: calculateLLMFitScore(baseScore, issueKeys, LLM_FIT_WEIGHTS.perplexity),
     };
 }
 function calculateLLMFitScore(baseScore, issueKeys, weights) {
@@ -189,7 +315,7 @@ function calculateLLMFitScore(baseScore, issueKeys, weights) {
     return clampScore(blendedScore);
 }
 function renderLLMFitScores(scores) {
-    for (const id of ["chatgpt", "copilot", "claude", "gemini"]) {
+    for (const id of ["chatgpt", "copilot", "claude", "gemini", "perplexity"]) {
         const value = scores[id];
         const card = document.querySelector(`[data-llm="${id}"]`);
         const label = document.getElementById(`${id}-fit`);
@@ -240,15 +366,71 @@ function setSpyAvailability(available) {
         renderSpyInsights([]);
     }
 }
+function setChecklistAvailability(available) {
+    const tab = document.getElementById("checklist-tab");
+    if (tab)
+        tab.hidden = !available;
+    if (!available) {
+        const selectedTab = document.querySelector('[data-tab="checklist-panel"][aria-selected="true"]');
+        if (selectedTab)
+            selectTab("llm-panel");
+    }
+}
 function renderList(items) {
     const suggestionsEl = document.getElementById("suggestions");
-    if (!suggestionsEl)
+    const showMoreBtn = document.getElementById("show-more-suggestions");
+    const showMoreText = document.getElementById("show-more-text");
+    if (!suggestionsEl || !showMoreBtn || !showMoreText)
         return;
     suggestionsEl.innerHTML = "";
-    for (const suggestion of items) {
-        const li = document.createElement("li");
-        li.textContent = suggestion;
-        suggestionsEl.appendChild(li);
+    const displayLimit = 3;
+    const hasMore = items.length > displayLimit;
+    let isExpanded = false;
+    const renderItems = () => {
+        suggestionsEl.innerHTML = "";
+        const itemsToShow = isExpanded ? items : items.slice(0, displayLimit);
+        for (const suggestion of itemsToShow) {
+            const li = document.createElement("li");
+            li.textContent = suggestion;
+            suggestionsEl.appendChild(li);
+        }
+    };
+    renderItems();
+    showMoreBtn.hidden = !hasMore;
+    showMoreBtn.classList.toggle("expanded", isExpanded);
+    const locale = localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
+    showMoreText.textContent = isExpanded
+        ? (locale === "pt-BR" ? "Ver menos" : "Show less")
+        : (locale === "pt-BR" ? "Ver mais" : "Show more");
+    showMoreBtn.onclick = () => {
+        isExpanded = !isExpanded;
+        renderItems();
+        showMoreBtn.classList.toggle("expanded", isExpanded);
+        showMoreText.textContent = isExpanded
+            ? (locale === "pt-BR" ? "Ver menos" : "Show less")
+            : (locale === "pt-BR" ? "Ver mais" : "Show more");
+    };
+}
+function renderNoindexBanner(visible) {
+    const existing = document.getElementById("noindex-banner");
+    if (!visible) {
+        if (existing)
+            existing.remove();
+        return;
+    }
+    if (existing)
+        return;
+    const banner = document.createElement("div");
+    banner.id = "noindex-banner";
+    banner.className = "noindex-banner";
+    const locale = localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
+    banner.textContent =
+        locale === "pt-BR"
+            ? "Aviso: esta página está marcada como noindex e pode ser invisível para buscadores de IA."
+            : "Warning: this page is marked noindex and may be invisible to AI search crawlers.";
+    const meter = document.querySelector(".meter");
+    if (meter === null || meter === void 0 ? void 0 : meter.parentNode) {
+        meter.parentNode.insertBefore(banner, meter.nextSibling);
     }
 }
 function renderSpyInsights(items) {
@@ -260,6 +442,169 @@ function renderSpyInsights(items) {
         const li = document.createElement("li");
         li.textContent = item;
         listEl.appendChild(li);
+    }
+}
+function renderTrend(current, prev) {
+    const el = document.getElementById("score-trend");
+    if (!el)
+        return;
+    if (!prev) {
+        el.textContent = "";
+        el.className = "score-trend";
+        return;
+    }
+    const delta = current - prev.s;
+    if (delta > 0) {
+        el.textContent = `↑ +${delta} vs last scan`;
+        el.className = "score-trend trend-up";
+    }
+    else if (delta < 0) {
+        el.textContent = `↓ ${delta} vs last scan`;
+        el.className = "score-trend trend-down";
+    }
+    else {
+        el.textContent = "= same as last scan";
+        el.className = "score-trend trend-flat";
+    }
+}
+function renderChecklist(result) {
+    const listEl = document.getElementById("checklist-items");
+    if (!listEl)
+        return;
+    listEl.innerHTML = "";
+    if (!result)
+        return;
+    const issueSet = new Set(result.issueKeys || []);
+    const labels = SIGNAL_LABELS[currentLocale];
+    for (const key of ALL_FINDING_KEYS) {
+        const isPassing = !issueSet.has(key);
+        const li = document.createElement("li");
+        li.className = `checklist-item ${isPassing ? "pass" : "fail"}`;
+        const icon = document.createElement("span");
+        icon.className = "checklist-icon";
+        icon.textContent = isPassing ? "✓" : "✗";
+        const label = document.createElement("span");
+        label.className = "checklist-label";
+        label.textContent = labels[key];
+        label.title = labels[key];
+        li.appendChild(icon);
+        li.appendChild(label);
+        listEl.appendChild(li);
+    }
+}
+function renderSnippetPreview(result, url) {
+    const el = document.getElementById("snippet-preview");
+    if (!el)
+        return;
+    let hostname = "";
+    try {
+        hostname = new URL(url).hostname;
+    }
+    catch ( /* no-op */_a) { /* no-op */ }
+    el.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "snippet-card";
+    const src = document.createElement("div");
+    src.className = "snippet-source";
+    src.textContent = hostname;
+    const ttl = document.createElement("div");
+    ttl.className = "snippet-title";
+    ttl.textContent = result.pageTitle || hostname;
+    const desc = document.createElement("div");
+    desc.className = "snippet-desc";
+    desc.textContent = result.metaDescription || UI_COPY[currentLocale].noSnippet;
+    card.appendChild(src);
+    card.appendChild(ttl);
+    card.appendChild(desc);
+    el.appendChild(card);
+}
+function exportMarkdown() {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!lastResult)
+            return;
+        const copy = UI_COPY[currentLocale];
+        const url = lastTabUrl || "—";
+        const score = lastResult.score;
+        const label = getScoreLabel(score, currentLocale);
+        const issueCount = lastResult.issues.length;
+        const issueLines = lastResult.suggestions.length
+            ? lastResult.suggestions.map((s) => `- ${s}`).join("\n")
+            : `- ${copy.greatJob}`;
+        const fitSection = lastFitScores
+            ? ["chatgpt", "copilot", "claude", "gemini", "perplexity"]
+                .map((id) => `- **${id.charAt(0).toUpperCase() + id.slice(1)}**: ${lastFitScores[id]}%`)
+                .join("\n")
+            : "";
+        const md = [
+            `# LLM Score Report`,
+            ``,
+            `**URL:** ${url}`,
+            `**Score:** ${score}/100 — ${label}`,
+            `**Issues:** ${issueCount}`,
+            ``,
+            `## Suggestions`,
+            issueLines,
+            fitSection ? `\n## AI Fit\n${fitSection}` : "",
+        ]
+            .filter((l) => l !== undefined)
+            .join("\n");
+        yield navigator.clipboard.writeText(md);
+    });
+}
+function initExportButton() {
+    const button = document.getElementById("export-markdown");
+    const textEl = document.getElementById("export-markdown-text");
+    if (!button || !textEl)
+        return;
+    button.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
+        yield exportMarkdown();
+        const original = textEl.textContent;
+        textEl.textContent = UI_COPY[currentLocale].exportCopied;
+        window.setTimeout(() => {
+            textEl.textContent = original;
+        }, 1500);
+    }));
+}
+function getPreviousScore(hostname) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const key = `llm-h-${hostname}`;
+            const data = yield chrome.storage.sync.get(key);
+            const entries = data[key] || [];
+            return entries[entries.length - 1];
+        }
+        catch (_a) {
+            return undefined;
+        }
+    });
+}
+function saveScore(hostname, score) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const key = `llm-h-${hostname}`;
+            const data = yield chrome.storage.sync.get(key);
+            const entries = data[key] || [];
+            entries.push({ s: score, t: Date.now() });
+            if (entries.length > 10)
+                entries.splice(0, entries.length - 10);
+            yield chrome.storage.sync.set({ [key]: entries });
+        }
+        catch (_a) {
+            // Storage unavailable; score history disabled
+        }
+    });
+}
+function updateActionBadge(score) {
+    var _a;
+    try {
+        if ((_a = chrome.action) === null || _a === void 0 ? void 0 : _a.setBadgeText) {
+            chrome.action.setBadgeText({ text: String(score) });
+            const color = score >= 76 ? "#50fa7b" : score >= 51 ? "#ffb86c" : "#ff5555";
+            chrome.action.setBadgeBackgroundColor({ color });
+        }
+    }
+    catch (_b) {
+        // Badge API unavailable
     }
 }
 function updateLanguageControls(locale) {
@@ -281,21 +626,34 @@ function applyLocaleText(locale) {
     setText("spy-help", copy.spyHelp);
     setText("llm-fit-title", copy.llmFitTitle);
     setText("llm-fit-help", copy.llmFitHelp);
+    setText("about-title", copy.aboutTitle);
+    setText("about-description", copy.aboutDescription);
+    setText("about-note", copy.aboutNote);
+    setText("close-about", copy.closeButton);
     setText("score-metric-label", copy.scoreMetricLabel);
     setText("issues-metric-label", copy.issuesMetricLabel);
     setText("issues-unit", copy.issuesUnit);
+    setText("checklist-title", copy.checklistTitle);
+    setText("checklist-help", copy.checklistHelp);
+    setText("export-markdown-text", copy.exportButton);
+    setText("snippet-help", copy.snippetHelp);
     updateLanguageControls(locale);
 }
 function renderLoading(locale) {
     const scoreEl = document.getElementById("score");
     const issuesCountEl = document.getElementById("issues-count");
     const scoreMeterEl = document.getElementById("score-meter");
+    const trendEl = document.getElementById("score-trend");
     if (scoreEl) {
         scoreEl.textContent = "--";
         scoreEl.className = "";
     }
     if (issuesCountEl)
         issuesCountEl.textContent = "--";
+    if (trendEl) {
+        trendEl.textContent = "";
+        trendEl.className = "score-trend";
+    }
     setText("score-label", UI_COPY[locale].analyzing);
     setText("summary-note", UI_COPY[locale].waitingForResults);
     if (scoreMeterEl) {
@@ -303,12 +661,18 @@ function renderLoading(locale) {
         scoreMeterEl.style.width = "0";
     }
     renderLLMFitScores({});
+    renderNoindexBanner(false);
     setInsightsAvailability(false);
     setSpyAvailability(false);
+    setChecklistAvailability(false);
+    const snippetEl = document.getElementById("snippet-preview");
+    if (snippetEl)
+        snippetEl.innerHTML = "";
     renderList([UI_COPY[locale].analyzing]);
 }
 function renderResult(result) {
     var _a;
+    lastResult = result;
     const scoreEl = document.getElementById("score");
     const issuesCountEl = document.getElementById("issues-count");
     const scoreLabelEl = document.getElementById("score-label");
@@ -326,7 +690,10 @@ function renderResult(result) {
         scoreMeterEl.className = getScoreColor(result.score);
         scoreMeterEl.style.width = `${result.score}%`;
     }
-    renderLLMFitScores(calculateLLMFitScores(result));
+    const fitScores = calculateLLMFitScores(result);
+    lastFitScores = fitScores;
+    renderLLMFitScores(fitScores);
+    renderNoindexBanner(result.isNoindex === true);
     const hasImprovementInsights = result.suggestions.length > 0 && Boolean((_a = result.improvementPrompt) === null || _a === void 0 ? void 0 : _a.trim());
     setInsightsAvailability(hasImprovementInsights);
     if (hasImprovementInsights)
@@ -334,6 +701,10 @@ function renderResult(result) {
     const spyInsights = result.spyInsights || [];
     setSpyAvailability(spyInsights.length > 0);
     renderSpyInsights(spyInsights);
+    setChecklistAvailability(true);
+    renderChecklist(result);
+    renderSnippetPreview(result, lastTabUrl);
+    updateActionBadge(result.score);
     const items = result.suggestions.length ? result.suggestions : [UI_COPY[currentLocale].greatJob];
     renderList(items);
 }
@@ -342,12 +713,17 @@ function renderError(errorKey) {
     const issuesCountEl = document.getElementById("issues-count");
     const scoreLabelEl = document.getElementById("score-label");
     const scoreMeterEl = document.getElementById("score-meter");
+    const trendEl = document.getElementById("score-trend");
     if (scoreEl) {
         scoreEl.textContent = "--";
         scoreEl.className = "score-red";
     }
     if (issuesCountEl)
         issuesCountEl.textContent = "--";
+    if (trendEl) {
+        trendEl.textContent = "";
+        trendEl.className = "score-trend";
+    }
     if (scoreLabelEl)
         scoreLabelEl.textContent = UI_COPY[currentLocale].errors.unableToAnalyze;
     setText("summary-note", UI_COPY[currentLocale].errors.unableToAnalyze);
@@ -356,31 +732,69 @@ function renderError(errorKey) {
         scoreMeterEl.style.width = "0";
     }
     renderLLMFitScores({});
+    renderNoindexBanner(false);
     setInsightsAvailability(false);
     setSpyAvailability(false);
+    setChecklistAvailability(false);
     renderList([UI_COPY[currentLocale].errors[errorKey]]);
+}
+function setPageUrlText(text) {
+    const element = document.getElementById("page-url");
+    if (element)
+        element.textContent = text;
+}
+function renderPageInfo(tab) {
+    if (!(tab === null || tab === void 0 ? void 0 : tab.url)) {
+        setPageUrlText(currentLocale === "pt-BR" ? "Aba ativa sem URL válida." : "Active tab has no valid URL.");
+        return;
+    }
+    try {
+        const url = new URL(tab.url);
+        setPageUrlText(url.hostname);
+    }
+    catch (_a) {
+        setPageUrlText(tab.url);
+    }
+}
+function clearPageInfo() {
+    setPageUrlText(currentLocale === "pt-BR" ? "Aguardando aba ativa..." : "Waiting for active tab...");
 }
 function loadScore() {
     return __awaiter(this, void 0, void 0, function* () {
         applyLocaleText(currentLocale);
         renderLoading(currentLocale);
+        clearPageInfo();
         try {
             const tab = yield getActiveTab();
             if (!(tab === null || tab === void 0 ? void 0 : tab.id))
                 return renderError("noActiveTab");
+            renderPageInfo(tab);
+            if (tab.url) {
+                lastTabUrl = tab.url;
+                try {
+                    lastHostname = new URL(tab.url).hostname;
+                }
+                catch (_a) {
+                    lastHostname = "";
+                }
+            }
+            const prevEntry = lastHostname ? yield getPreviousScore(lastHostname) : undefined;
             let response;
             try {
                 response = yield requestScore(tab.id, currentLocale);
             }
-            catch (_a) {
+            catch (_b) {
                 yield injectContentScript(tab.id);
                 response = yield requestScore(tab.id, currentLocale);
             }
             if (!response)
                 return renderError("unableToAnalyze");
             renderResult(response);
+            renderTrend(response.score, prevEntry);
+            if (lastHostname)
+                yield saveScore(lastHostname, response.score);
         }
-        catch (_b) {
+        catch (_c) {
             renderError("couldNotConnect");
         }
     });
@@ -398,6 +812,56 @@ function initLanguageSelector() {
         });
     }
 }
+function showReviewToast() {
+    try {
+        const locale = localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
+        const copy = UI_COPY[locale];
+        const lastToastKey = "llm-score-review-toast-last-shown";
+        const lastShown = localStorage.getItem(lastToastKey);
+        const now = Date.now();
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        if (lastShown && now - parseInt(lastShown) < ONE_DAY_MS)
+            return;
+        const existing = document.getElementById("review-toast");
+        if (existing)
+            existing.remove();
+        const toast = document.createElement("div");
+        toast.id = "review-toast";
+        toast.className = "review-toast";
+        toast.innerHTML = `
+      <div class="review-toast-content">
+        <p class="review-toast-message">${copy.reviewPrompt}</p>
+        <div class="review-toast-actions">
+          <a href="https://chrome.google.com/webstore/detail/${chrome.runtime.id}" target="_blank" rel="noopener" class="review-toast-button review-button">
+            ${copy.reviewButton}
+          </a>
+          <button type="button" class="review-toast-button dismiss-button" aria-label="Dismiss">×</button>
+        </div>
+      </div>
+    `;
+        document.body.appendChild(toast);
+        localStorage.setItem(lastToastKey, now.toString());
+        const timeout = window.setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add("fade-out");
+                window.setTimeout(() => { if (toast.parentNode)
+                    toast.remove(); }, 300);
+            }
+        }, 8000);
+        const dismissBtn = toast.querySelector(".dismiss-button");
+        if (dismissBtn) {
+            dismissBtn.addEventListener("click", () => {
+                window.clearTimeout(timeout);
+                toast.classList.add("fade-out");
+                window.setTimeout(() => { if (toast.parentNode)
+                    toast.remove(); }, 300);
+            });
+        }
+    }
+    catch (error) {
+        console.debug("Review toast failed (development/test env?):", error);
+    }
+}
 function initPromptCopy() {
     const button = document.getElementById("copy-prompt");
     const promptEl = document.getElementById("improvement-prompt");
@@ -409,17 +873,46 @@ function initPromptCopy() {
             return;
         yield navigator.clipboard.writeText(text);
         button.textContent = UI_COPY[currentLocale].copiedPrompt;
+        showReviewToast();
         window.setTimeout(() => {
             button.textContent = UI_COPY[currentLocale].copyPrompt;
         }, 1200);
     }));
+}
+function initReloadButton() {
+    const button = document.getElementById("reload-score");
+    if (!button)
+        return;
+    button.addEventListener("click", () => { loadScore(); });
+}
+function initAboutModal() {
+    const aboutButton = document.getElementById("about-button");
+    const closeButton = document.getElementById("close-about");
+    const backdrop = document.getElementById("about-modal-backdrop");
+    function closeAbout() { if (backdrop)
+        backdrop.hidden = true; }
+    function openAbout() { if (backdrop)
+        backdrop.hidden = false; }
+    if (aboutButton)
+        aboutButton.addEventListener("click", openAbout);
+    if (closeButton)
+        closeButton.addEventListener("click", closeAbout);
+    if (backdrop) {
+        backdrop.addEventListener("click", (event) => {
+            if (event.target === backdrop)
+                closeAbout();
+        });
+    }
 }
 function initTabs() {
     const tabs = document.querySelectorAll("[data-tab]");
     for (const tab of tabs) {
         tab.addEventListener("click", () => {
             const panelId = tab.dataset.tab;
-            if (panelId === "llm-panel" || panelId === "insights-panel" || panelId === "spy-panel") {
+            if (panelId === "llm-panel" ||
+                panelId === "insights-panel" ||
+                panelId === "spy-panel" ||
+                panelId === "checklist-panel") {
                 selectTab(panelId);
             }
         });
@@ -428,7 +921,10 @@ function initTabs() {
 document.addEventListener("DOMContentLoaded", () => {
     initLanguageSelector();
     initPromptCopy();
+    initReloadButton();
+    initAboutModal();
     initTabs();
+    initExportButton();
     loadScore();
 });
 export {};

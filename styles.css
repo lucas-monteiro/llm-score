@@ -690,6 +690,14 @@ h2 {
   --fit-color: var(--purple);
 }
 
+.llm-card[data-llm="perplexity"] {
+  --fit-color: var(--pink);
+}
+
+.llm-fit-grid .llm-card:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
 .llm-ring {
   display: grid;
   place-items: center;
@@ -750,4 +758,134 @@ h2 {
 .score-yellow ~ .metric-unit,
 .score-green ~ .metric-unit {
   color: var(--muted);
+}
+
+/* ── Noindex Banner ─────────────────────────── */
+
+.noindex-banner {
+  margin: 10px 0 4px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 85, 85, 0.5);
+  border-radius: 6px;
+  background: rgba(255, 85, 85, 0.12);
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ── Score Trend ─────────────────────────── */
+
+.score-trend {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  min-height: 13px;
+  line-height: 1;
+}
+
+.trend-up { color: var(--green); }
+.trend-down { color: var(--red); }
+.trend-flat { color: var(--muted); }
+
+/* ── Checklist ───────────────────────────── */
+
+.checklist-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.checklist-item.pass { background: rgba(80, 250, 123, 0.06); }
+.checklist-item.fail { background: rgba(255, 85, 85, 0.06); }
+
+.checklist-icon {
+  font-size: 11px;
+  font-weight: 800;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.checklist-item.pass .checklist-icon { color: var(--green); }
+.checklist-item.fail .checklist-icon { color: var(--red); }
+
+.checklist-label {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Export Button ───────────────────────── */
+
+.export-button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 1px solid rgba(139, 233, 253, 0.32);
+  border-radius: 6px;
+  background: rgba(139, 233, 253, 0.08);
+  color: var(--cyan);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.export-button:hover { background: rgba(139, 233, 253, 0.16); }
+.export-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* ── AI Snippet Preview ──────────────────── */
+
+.snippet-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.snippet-card {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.snippet-source {
+  margin-bottom: 3px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.snippet-title {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.snippet-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #d9d9e3;
+  font-size: 11px;
+  line-height: 1.4;
 }

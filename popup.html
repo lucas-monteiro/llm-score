@@ -73,6 +73,7 @@
             <span id="score">--</span><span class="metric-unit">/100</span>
           </div>
           <p id="score-label" class="metric-note">Analyzing page</p>
+          <p id="score-trend" class="score-trend" aria-live="polite"></p>
         </div>
 
         <div class="metric">
@@ -118,7 +119,13 @@
               <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span id="spy-title">Spy</span>
+            <span id="spy-title">Strengths</span>
+          </button>
+          <button type="button" id="checklist-tab" class="tab-button" role="tab" aria-selected="false" aria-controls="checklist-panel" data-tab="checklist-panel" hidden>
+            <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+            <span id="checklist-title">Checklist</span>
           </button>
         </div>
 
@@ -175,6 +182,23 @@
                 <span id="gemini-fit">--</span>
               </div>
             </article>
+
+            <article class="llm-card" data-llm="perplexity">
+              <div class="llm-ring">
+                <svg class="llm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 2v20M2 7l10 5 10-5M2 17l10-5 10 5" />
+                </svg>
+              </div>
+              <div>
+                <strong>Perplexity</strong>
+                <span id="perplexity-fit">--</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="snippet-section">
+            <p id="snippet-help" class="section-help">How AI search would likely present this page.</p>
+            <div id="snippet-preview"></div>
           </div>
         </div>
 
@@ -190,10 +214,18 @@
           <p id="spy-help" class="section-help">What this page already does well for your client to reuse.</p>
           <ul id="spy-insights" class="spy-list"></ul>
         </div>
+
+        <div id="checklist-panel" class="tab-panel" role="tabpanel" aria-labelledby="checklist-tab" hidden>
+          <p id="checklist-help" class="section-help">All signals evaluated — pass or fail.</p>
+          <ul id="checklist-items" class="checklist-list"></ul>
+          <button type="button" id="export-markdown" class="export-button">
+            <span id="export-markdown-text">Export MD</span>
+          </button>
+        </div>
       </section>
     </main>
 
-    <div class="version-badge">v1.0.0</div>
+    <div class="version-badge">v1.1.0</div>
     <script type="module" src="dist/popup.js"></script>
   </body>
 </html>

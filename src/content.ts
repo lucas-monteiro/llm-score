@@ -8,6 +8,12 @@ type LLMResult = {
   pageTitle?: string;
   metaDescription?: string;
   canonical?: string;
+  llmsTxt?: {
+    exists: boolean;
+    url: string;
+    status?: number;
+  };
+  isNoindex?: boolean;
 };
 
 type Locale = "en-US" | "pt-BR";
@@ -27,7 +33,15 @@ type FindingKey =
   | "metaDescription"
   | "titleMatch"
   | "h1Reinforced"
-  | "keywordFocus";
+  | "keywordFocus"
+  | "llmsTxt"
+  | "noindex"
+  | "schemaMarkup"
+  | "faqSchema"
+  | "contentFreshness"
+  | "authorSignal"
+  | "semanticStructure"
+  | "imageAltText";
 
 type PageMetadata = {
   title: string;
@@ -103,6 +117,38 @@ const FINDINGS: Record<Locale, Record<FindingKey, { issue: string; suggestion: s
       issue: "Keyword focus appears weak or inconsistent",
       suggestion: "Use core keywords repeatedly but naturally across sections",
     },
+    llmsTxt: {
+      issue: "LLM indexing file was not found",
+      suggestion: "Add an llms.txt file at the domain root to guide AI crawlers and indexing tools",
+    },
+    noindex: {
+      issue: "Page is marked noindex and cannot be indexed by AI crawlers",
+      suggestion: "Remove the noindex directive if you want this page to appear in AI search results",
+    },
+    schemaMarkup: {
+      issue: "No structured data (Schema.org) found",
+      suggestion: "Add JSON-LD markup to help AI understand your content type and structure",
+    },
+    faqSchema: {
+      issue: "No FAQ or HowTo schema found",
+      suggestion: "Add a FAQPage or HowTo JSON-LD block to improve AI snippet eligibility",
+    },
+    contentFreshness: {
+      issue: "No publication or modification date found",
+      suggestion: "Add article dates or a <time> element to signal content freshness to AI",
+    },
+    authorSignal: {
+      issue: "No author information detected",
+      suggestion: "Add author metadata or a byline to improve content trustworthiness signals",
+    },
+    semanticStructure: {
+      issue: "No semantic HTML5 structure detected",
+      suggestion: "Use <article>, <main>, or <section> elements to define content boundaries",
+    },
+    imageAltText: {
+      issue: "Images missing descriptive alt text",
+      suggestion: "Add descriptive alt attributes to images for accessibility and AI context",
+    },
   },
   "pt-BR": {
     singleH1: {
@@ -168,6 +214,38 @@ const FINDINGS: Record<Locale, Record<FindingKey, { issue: string; suggestion: s
     keywordFocus: {
       issue: "O foco de palavras-chave parece fraco ou inconsistente",
       suggestion: "Use palavras-chave centrais de forma repetida, mas natural, nas seções",
+    },
+    llmsTxt: {
+      issue: "Arquivo de indexacao para LLM nao encontrado",
+      suggestion: "Adicione um arquivo llms.txt na raiz do dominio para orientar crawlers e ferramentas de IA",
+    },
+    noindex: {
+      issue: "A página está marcada como noindex e não pode ser indexada por crawlers de IA",
+      suggestion: "Remova a diretiva noindex se quiser que esta página apareça nos resultados de busca por IA",
+    },
+    schemaMarkup: {
+      issue: "Nenhum dado estruturado (Schema.org) encontrado",
+      suggestion: "Adicione marcação JSON-LD para ajudar a IA a entender o tipo e a estrutura do conteúdo",
+    },
+    faqSchema: {
+      issue: "Nenhum schema de FAQ ou HowTo encontrado",
+      suggestion: "Adicione um bloco JSON-LD do tipo FAQPage ou HowTo para melhorar a elegibilidade de snippets",
+    },
+    contentFreshness: {
+      issue: "Nenhuma data de publicação ou modificação encontrada",
+      suggestion: "Adicione datas de artigo ou um elemento <time> para sinalizar a atualidade do conteúdo",
+    },
+    authorSignal: {
+      issue: "Nenhuma informação de autor detectada",
+      suggestion: "Adicione metadados de autor ou uma assinatura para melhorar os sinais de confiabilidade",
+    },
+    semanticStructure: {
+      issue: "Nenhuma estrutura semântica HTML5 detectada",
+      suggestion: "Use elementos <article>, <main> ou <section> para delimitar melhor o conteúdo",
+    },
+    imageAltText: {
+      issue: "Imagens sem texto alternativo descritivo",
+      suggestion: "Adicione atributos alt descritivos às imagens para acessibilidade e contexto para IA",
     },
   },
 };
@@ -257,6 +335,64 @@ function getPageMetadata(): PageMetadata {
   };
 }
 
+function checkNoindex(): boolean {
+  const robotsMeta = document.querySelector<HTMLMetaElement>(
+    'meta[name="robots"], meta[name="googlebot"]',
+  );
+  if (robotsMeta) {
+    return (robotsMeta.content || "").toLowerCase().includes("noindex");
+  }
+  return false;
+}
+
+async function checkLlmsTxt(): Promise<{ exists: boolean; url: string; status?: number }> {
+  const url = new URL("/llms.txt", window.location.origin).href;
+
+  try {
+    let response = await fetch(url, {
+      method: "HEAD",
+      cache: "no-store",
+      credentials: "omit",
+    });
+
+    if (response.status === 405 || response.status === 501) {
+      response = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        credentials: "omit",
+      });
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    const looksLikeHtmlFallback = contentType.includes("text/html") && response.url !== url;
+
+    return {
+      exists: response.ok && !looksLikeHtmlFallback,
+      url,
+      status: response.status,
+    };
+  } catch {
+    return {
+      exists: false,
+      url,
+    };
+  }
+}
+
+const H1_STOP_WORDS = new Set([
+  "como", "para", "com", "que", "uma", "por", "mais", "seus", "suas",
+  "este", "essa", "isso", "dos", "das", "num", "numa", "nem", "sem",
+  "the", "and", "for", "with", "that", "this", "from", "are", "was",
+  "will", "have", "has", "been", "not", "but", "they", "their", "you",
+  "your", "can", "its", "our",
+]);
+
+function getKeywords(text: string): string[] {
+  return (text.match(/[a-zÀ-ÿ]{4,}/gi) || [])
+    .map((w) => w.toLowerCase())
+    .filter((w) => !H1_STOP_WORDS.has(w));
+}
+
 function limitItems(items: string[], limit: number): string[] {
   return items.filter(Boolean).slice(0, limit);
 }
@@ -277,6 +413,8 @@ function buildImprovementPrompt(
     url: string;
     metaDescription: string;
     canonical?: string;
+    llmsTxtUrl: string;
+    hasLlmsTxt: boolean;
   },
 ): string {
   const issueLines = issues.length ? issues.map((issue) => `- ${issue}`).join("\n") : "- No major issues found";
@@ -288,6 +426,7 @@ function buildImprovementPrompt(
     context.title ? `- Title: ${context.title}` : "- Title not found",
     context.metaDescription ? `- Meta description: ${context.metaDescription}` : "- Meta description not found",
     context.canonical ? `- Canonical: ${context.canonical}` : "- Canonical missing",
+    context.hasLlmsTxt ? `- llms.txt: found at ${context.llmsTxtUrl}` : `- llms.txt: not found at ${context.llmsTxtUrl}`,
   ].join("\n");
 
   if (locale === "pt-BR") {
@@ -432,7 +571,20 @@ function buildSpyInsights(
   return limitItems(insights, 8);
 }
 
-function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
+function parseJsonLdSchemas(): Record<string, unknown>[] {
+  const schemas: Record<string, unknown>[] = [];
+  for (const script of document.querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"]')) {
+    try {
+      const data = JSON.parse(script.textContent || "");
+      if (data && typeof data === "object") schemas.push(data as Record<string, unknown>);
+    } catch {
+      // invalid JSON-LD, skip
+    }
+  }
+  return schemas;
+}
+
+async function calculateLLMScore(locale: Locale = "en-US"): Promise<LLMResult> {
   let score = 0;
   const issues: string[] = [];
   const suggestions: string[] = [];
@@ -505,24 +657,33 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
   }
 
   const firstParagraph = (paragraphs[0]?.textContent || "").trim().toLowerCase();
-  if (firstParagraph.length > 0 && firstParagraph.length < 300) score += 10;
+  if (firstParagraph.length >= 50 && firstParagraph.length < 300) score += 10;
   else {
     addFinding(locale, "clearOpening", issues, suggestions, issueKeys);
   }
 
-  if (/\b(is|means|refers|significa)\b|(^|\s)(e|é)(\s|$)|refere-se/.test(bodyText)) score += 5;
+  const hasDefinitions =
+    /\b\w+\s+(is|are)\s+(a|an|the)\s+\w+/i.test(bodyText) ||
+    /\b(means|refers to|is defined as|known as|also called|é um|é uma|é o|é a|significa|refere-se a|é chamado)\b/i.test(bodyText);
+  if (hasDefinitions) score += 5;
   else {
     addFinding(locale, "definitions", issues, suggestions, issueKeys);
   }
 
-  if (bodyText.includes("?")) score += 5;
+  if (/[a-zÀ-ÿ]{2,}[^.!?]{12,}\?/i.test(bodyText)) score += 5;
   else {
     addFinding(locale, "questionPhrasing", issues, suggestions, issueKeys);
   }
 
-  if (document.querySelectorAll("ul, ol").length > 0) score += 10;
+  if (document.querySelectorAll("ul, ol").length > 0) score += 5;
   else {
     addFinding(locale, "lists", issues, suggestions, issueKeys);
+  }
+
+  const llmsTxt = await checkLlmsTxt();
+  if (llmsTxt.exists) score += 5;
+  else {
+    addFinding(locale, "llmsTxt", issues, suggestions, issueKeys);
   }
 
   if (document.querySelectorAll("strong, b").length > 0) score += 5;
@@ -530,7 +691,7 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     addFinding(locale, "emphasis", issues, suggestions, issueKeys);
   }
 
-  const hasExternalLinks = links.some((link) => {
+  const externalLinks = links.filter((link) => {
     const href = link.getAttribute("href") || "";
     if (!href || href.startsWith("#") || href.startsWith("/")) return false;
     try {
@@ -541,20 +702,68 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     }
   });
 
-  if (hasExternalLinks) score += 10;
+  if (externalLinks.length > 0) score += 10;
   else {
     addFinding(locale, "externalLinks", issues, suggestions, issueKeys);
   }
 
-  if (/\d/.test(bodyText)) score += 5;
+  const hasNumericalEvidence =
+    /\d+(\.\d+)?(%|k\b|M\b|B\b|mil\b|milhão|billion|million)/i.test(bodyText) ||
+    /\d+\s*(estudos|pesquisas|usuários|clientes|empresas|anos|meses|dias|horas|países|pessoas|casos)/i.test(bodyText) ||
+    Array.from(document.querySelectorAll("p")).some((p) => /\d{2,}/.test(p.textContent || ""));
+  if (hasNumericalEvidence) score += 5;
   else {
     addFinding(locale, "numericalEvidence", issues, suggestions, issueKeys);
   }
 
-  const h1Text = (h1s[0]?.textContent || "").trim().toLowerCase();
-  if (h1Text && bodyText.includes(h1Text)) score += 5;
-  else {
+  const h1Text = getElementText(h1s[0]).toLowerCase();
+  if (h1Text) {
+    const h1Keywords = getKeywords(h1Text);
+    if (h1Keywords.length === 0) {
+      score += 5;
+    } else {
+      const matchCount = h1Keywords.filter((kw) => bodyText.includes(kw)).length;
+      if (matchCount / h1Keywords.length >= 0.6) score += 5;
+      else addFinding(locale, "h1Reinforced", issues, suggestions, issueKeys);
+    }
+  } else {
     addFinding(locale, "h1Reinforced", issues, suggestions, issueKeys);
+  }
+
+  const schemas = parseJsonLdSchemas();
+
+  if (schemas.length > 0) score += 10;
+  else addFinding(locale, "schemaMarkup", issues, suggestions, issueKeys);
+
+  const hasFaqSchema = schemas.some((s) => {
+    const type = s["@type"];
+    const types = Array.isArray(type) ? type : [type];
+    return types.some((t) => t === "FAQPage" || t === "HowTo");
+  });
+  if (hasFaqSchema) score += 5;
+  else addFinding(locale, "faqSchema", issues, suggestions, issueKeys);
+
+  const hasDateElement = document.querySelector("time[datetime]") !== null;
+  const hasArticleDate = Boolean(getMetaContent("article:modified_time") || getMetaContent("article:published_time"));
+  const hasSchemaDate = schemas.some((s) => s["dateModified"] || s["datePublished"]);
+  if (hasDateElement || hasArticleDate || hasSchemaDate) score += 5;
+  else addFinding(locale, "contentFreshness", issues, suggestions, issueKeys);
+
+  const hasAuthorMeta = Boolean(getMetaContent("author"));
+  const hasAuthorLink = document.querySelector('a[rel="author"]') !== null;
+  const hasAuthorElement = document.querySelector('[class*="author"], [itemprop="author"]') !== null;
+  const hasSchemaAuthor = schemas.some((s) => Boolean(s["author"]));
+  if (hasAuthorMeta || hasAuthorLink || hasAuthorElement || hasSchemaAuthor) score += 5;
+  else addFinding(locale, "authorSignal", issues, suggestions, issueKeys);
+
+  if (document.querySelector('article, main, [role="main"]') !== null) score += 5;
+  else addFinding(locale, "semanticStructure", issues, suggestions, issueKeys);
+
+  const images = Array.from(document.querySelectorAll("img"));
+  if (images.length > 0) {
+    const imagesWithAlt = images.filter((img) => (img.getAttribute("alt") || "").trim().length > 0);
+    if (imagesWithAlt.length / images.length >= 0.7) score += 5;
+    else addFinding(locale, "imageAltText", issues, suggestions, issueKeys);
   }
 
   const words = bodyText.match(/[a-zÀ-ÿ]{4,}/gi)?.map((word) => word.toLowerCase()) || [];
@@ -569,16 +778,14 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     addFinding(locale, "keywordFocus", issues, suggestions, issueKeys);
   }
 
+  const isNoindex = checkNoindex();
+  if (isNoindex) {
+    score = Math.max(0, score - 15);
+    addFinding(locale, "noindex", issues, suggestions, issueKeys);
+  }
+
   const finalScore = Math.min(100, Math.max(0, Math.round(score)));
-  const externalLinkCount = links.filter((link) => {
-    const href = link.getAttribute("href") || "";
-    if (!href || href.startsWith("#") || href.startsWith("/")) return false;
-    try {
-      return new URL(href, window.location.origin).origin !== window.location.origin;
-    } catch {
-      return false;
-    }
-  }).length;
+  const externalLinkCount = externalLinks.length;
   const headingsForPrompt = limitItems(
     headings.map((heading) => `${heading.tagName.toUpperCase()}: ${getElementText(heading)}`),
     8,
@@ -588,21 +795,11 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     4,
   );
   const externalLinkSamples = limitItems(
-    links
-      .filter((link) => {
-        const href = link.getAttribute("href") || "";
-        if (!href || href.startsWith("#") || href.startsWith("/")) return false;
-        try {
-          return new URL(href, window.location.origin).origin !== window.location.origin;
-        } catch {
-          return false;
-        }
-      })
-      .map((link) => {
-        const text = getElementText(link);
-        const href = link.getAttribute("href") || "";
-        return text ? `${text} (${href})` : href;
-      }),
+    externalLinks.map((link) => {
+      const text = getElementText(link);
+      const href = link.getAttribute("href") || "";
+      return text ? `${text} (${href})` : href;
+    }),
     4,
   );
   const spyInsights = buildSpyInsights(locale, {
@@ -625,6 +822,8 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     url: window.location.href,
     metaDescription: metadata.metaDescription,
     canonical: metadata.canonical,
+    llmsTxtUrl: llmsTxt.url,
+    hasLlmsTxt: llmsTxt.exists,
   });
 
   return {
@@ -637,6 +836,8 @@ function calculateLLMScore(locale: Locale = "en-US"): LLMResult {
     pageTitle: metadata.title,
     metaDescription: metadata.metaDescription,
     canonical: metadata.canonical,
+    llmsTxt,
+    isNoindex,
   };
 }
 
@@ -651,8 +852,11 @@ if (!llmScoreWindow.__llmScoreContentScriptLoaded) {
     const locale = normalizeLocale(message?.locale);
 
     waitForPageToSettle()
-      .then(() => sendResponse(calculateLLMScore(locale)))
-      .catch(() => sendResponse(calculateLLMScore(locale)));
+      .then(() => calculateLLMScore(locale))
+      .then((result) => sendResponse(result))
+      .catch(() => {
+        calculateLLMScore(locale).then((result) => sendResponse(result));
+      });
 
     return true;
   });
