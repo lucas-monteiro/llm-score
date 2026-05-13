@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const DEFAULT_LOCALE = "en-US";
 const LOCALE_STORAGE_KEY = "llm-score-locale";
+const REVIEW_DOMAINS_KEY = "llm-score-analyzed-domains";
 const UI_COPY = {
     "en-US": {
         reportTitle: "LLM Score",
@@ -40,6 +41,7 @@ const UI_COPY = {
         exportCopied: "Copied!",
         snippetHelp: "How AI search would likely present this page.",
         noSnippet: "No description available.",
+        rateLabel: "Rate this extension",
         scoreLabels: {
             low: "Needs attention",
             medium: "Getting there",
@@ -81,6 +83,7 @@ const UI_COPY = {
         exportCopied: "Copiado!",
         snippetHelp: "Como a busca com IA provavelmente apresentaria esta página.",
         noSnippet: "Sem descrição disponível.",
+        rateLabel: "Avaliar extensão",
         scoreLabels: {
             low: "Precisa de atenção",
             medium: "No caminho certo",
@@ -638,6 +641,16 @@ function applyLocaleText(locale) {
     setText("export-markdown-text", copy.exportButton);
     setText("snippet-help", copy.snippetHelp);
     updateLanguageControls(locale);
+    const rateLink = document.getElementById("rate-link");
+    if (rateLink) {
+        rateLink.textContent = copy.rateLabel;
+        try {
+            rateLink.href = `https://chrome.google.com/webstore/detail/${chrome.runtime.id}/reviews`;
+        }
+        catch (_a) {
+            rateLink.href = "https://chrome.google.com/webstore/search/LLM+Score";
+        }
+    }
 }
 function renderLoading(locale) {
     const scoreEl = document.getElementById("score");
@@ -791,8 +804,11 @@ function loadScore() {
                 return renderError("unableToAnalyze");
             renderResult(response);
             renderTrend(response.score, prevEntry);
-            if (lastHostname)
+            if (lastHostname) {
                 yield saveScore(lastHostname, response.score);
+                const domainsCount = trackAnalyzedDomain(lastHostname);
+                showReviewToast(response.score, domainsCount);
+            }
         }
         catch (_c) {
             renderError("couldNotConnect");
@@ -812,33 +828,66 @@ function initLanguageSelector() {
         });
     }
 }
-function showReviewToast() {
+function trackAnalyzedDomain(hostname) {
+    if (!hostname)
+        return 0;
+    try {
+        const stored = localStorage.getItem(REVIEW_DOMAINS_KEY);
+        const domains = stored ? JSON.parse(stored) : [];
+        if (!domains.includes(hostname)) {
+            domains.push(hostname);
+            localStorage.setItem(REVIEW_DOMAINS_KEY, JSON.stringify(domains));
+        }
+        return domains.length;
+    }
+    catch (_a) {
+        return 0;
+    }
+}
+function showReviewToast(score, domainsCount) {
     try {
         const locale = localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
         const copy = UI_COPY[locale];
         const lastToastKey = "llm-score-review-toast-last-shown";
         const lastShown = localStorage.getItem(lastToastKey);
         const now = Date.now();
-        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-        if (lastShown && now - parseInt(lastShown) < ONE_DAY_MS)
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        if (lastShown && now - parseInt(lastShown) < SEVEN_DAYS_MS)
             return;
+        // when called from analysis: require 3+ domains AND score < 70
+        if (score !== undefined && domainsCount !== undefined) {
+            if (score >= 70 || domainsCount < 3)
+                return;
+        }
         const existing = document.getElementById("review-toast");
         if (existing)
             existing.remove();
         const toast = document.createElement("div");
         toast.id = "review-toast";
         toast.className = "review-toast";
-        toast.innerHTML = `
-      <div class="review-toast-content">
-        <p class="review-toast-message">${copy.reviewPrompt}</p>
-        <div class="review-toast-actions">
-          <a href="https://chrome.google.com/webstore/detail/${chrome.runtime.id}" target="_blank" rel="noopener" class="review-toast-button review-button">
-            ${copy.reviewButton}
-          </a>
-          <button type="button" class="review-toast-button dismiss-button" aria-label="Dismiss">×</button>
-        </div>
-      </div>
-    `;
+        const content = document.createElement("div");
+        content.className = "review-toast-content";
+        const msg = document.createElement("p");
+        msg.className = "review-toast-message";
+        msg.textContent = copy.reviewPrompt;
+        const actions = document.createElement("div");
+        actions.className = "review-toast-actions";
+        const link = document.createElement("a");
+        link.href = `https://chrome.google.com/webstore/detail/${chrome.runtime.id}/reviews`;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.className = "review-toast-button review-button";
+        link.textContent = copy.reviewButton;
+        const dismissBtn = document.createElement("button");
+        dismissBtn.type = "button";
+        dismissBtn.className = "review-toast-button dismiss-button";
+        dismissBtn.setAttribute("aria-label", "Dismiss");
+        dismissBtn.textContent = "×";
+        actions.appendChild(link);
+        actions.appendChild(dismissBtn);
+        content.appendChild(msg);
+        content.appendChild(actions);
+        toast.appendChild(content);
         document.body.appendChild(toast);
         localStorage.setItem(lastToastKey, now.toString());
         const timeout = window.setTimeout(() => {
@@ -848,15 +897,12 @@ function showReviewToast() {
                     toast.remove(); }, 300);
             }
         }, 8000);
-        const dismissBtn = toast.querySelector(".dismiss-button");
-        if (dismissBtn) {
-            dismissBtn.addEventListener("click", () => {
-                window.clearTimeout(timeout);
-                toast.classList.add("fade-out");
-                window.setTimeout(() => { if (toast.parentNode)
-                    toast.remove(); }, 300);
-            });
-        }
+        dismissBtn.addEventListener("click", () => {
+            window.clearTimeout(timeout);
+            toast.classList.add("fade-out");
+            window.setTimeout(() => { if (toast.parentNode)
+                toast.remove(); }, 300);
+        });
     }
     catch (error) {
         console.debug("Review toast failed (development/test env?):", error);
